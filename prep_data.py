@@ -2,7 +2,9 @@ import pathlib
 import string
 import re
 # import numpy as np
+from tqdm import tqdm
 import pandas as pd
+from nltk.tokenize import word_tokenize
 import swifter
 
 
@@ -18,7 +20,7 @@ class TwNlp:
         self.test = pd.read_csv(self.data_p/'test.csv')
         self.train = pd.read_csv(self.data_p/'train.csv')
 
-    def trim_text(self, text):
+    def clean_text(self, text):
         url = re.compile(r'https?://\S+|www\.\S+')
         trimmed1 = url.sub(r'', text)
 
@@ -41,9 +43,17 @@ class TwNlp:
         trimmed4 = trimmed3.translate(table)
         return trimmed4
 
-    def clean(self):
+    def create_corpus_new(self, txt_srs):
+        corpus = list()
+        for tw in tqdm(txt_srs):
+            words = [word.lower() for word in word_tokenize(tw)]
+            corpus.append(words)
+        return corpus
+
+    def prep_data(self):
         df = pd.concat([self.train, self.test])
-        df['text'] = df['text'].swifter.apply(self.trim_text)
+        df['text'] = df['text'].swifter.apply(self.clean_text)
+        corpus = self.create_corpus_new(df['text'])
 
 
 if __name__ == "__main__":
