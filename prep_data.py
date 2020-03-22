@@ -1,7 +1,9 @@
 import pathlib
 import string
 import re
-# import numpy as np
+import numpy as np
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
 from tqdm import tqdm
 import pandas as pd
 from nltk.tokenize import word_tokenize
@@ -50,10 +52,32 @@ class TwNlp:
             corpus.append(words)
         return corpus
 
+    def read_glove(self):
+        embedding_dict = {}
+        p = self.data_p.parent/'glove.twitter.27B/glove.twitter.27B.100d.txt'
+        with open(p, 'r') as f:
+            for line in f:
+                values = line.split()
+                word = values[0]
+                vectors = np.asarray(values[1:], 'float32')
+                embedding_dict[word] = vectors
+        f.close()
+        return embedding_dict
+
     def prep_data(self):
         df = pd.concat([self.train, self.test])
         df['text'] = df['text'].swifter.apply(self.clean_text)
-        corpus = self.create_corpus_new(df['text'])
+        return self.create_corpus_new(df['text'])
+
+    def tokenize(self):
+        max_len = 50
+        tokenizer_obj = Tokenizer()
+        corpus = self.prep_data()
+        tokenizer_obj.fit_on_texts(corpus)
+        sequences = tokenizer_obj.texts_to_sequences(corpus)
+
+        tweet_pad = pad_sequences(sequences, maxlen=max_len,
+                                truncating='post', padding='post')
 
 
 if __name__ == "__main__":
